@@ -1,0 +1,56 @@
+---
+title: "Task 2 - Survey Responses"
+author: "Chase Tarr"
+date: "11/29/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+library(tidyverse)
+library(broom)
+library(janitor)
+library(here)
+library(kableExtra)
+library(DT)
+```
+
+```{r}
+survey_data <- read_csv(here("data", "conservation_survey.csv")) %>% 
+  clean_names() %>% 
+   select(env_id, pol_or) %>% 
+  mutate(Political_Party = case_when(
+    pol_or %in% c("1","2","3") ~ "Conservative",
+    pol_or %in% c("5", "6", "7") ~ "Liberal")) %>% 
+  mutate(areyou_enviro = case_when(
+    env_id == "1" ~ "Yes",
+    env_id == "2" ~ "No",
+    env_id == "3" ~ "Unsure")) %>% 
+  filter(Political_Party %in% c("Conservative", "Liberal"))
+```
+
+```{r}
+party_counts <- survey_data %>% 
+  janitor::tabyl(Political_Party, areyou_enviro)
+
+party_proportions <- party_counts %>% 
+  adorn_percentages() %>% 
+  adorn_pct_formatting(digits = 2) %>% 
+  adorn_ns()
+
+datatable(party_proportions)
+```
+
+```{r}
+party_cs <- party_counts %>% 
+  column_to_rownames(var = "Political_Party")
+```
+
+```{r}
+party_x2 <- chisq.test(party_cs)
+
+partyx2_tidy <- tidy(party_x2)
+```
+
+We used Pearson's Chi-Squared Test to evaluate the relationship between political preference and whether or not a given person considers themselves as an environmentalist. Upon analyzing the data, it is evident that there is a significant association between political association (conservative or liberal leaning) and if a person considers themselves an environmentalist($\chi$\^2\^(`r partyx2_tidy$parameter`) = `r round(partyx2_tidy$statistic,2)`, *p* = `r partyx2_tidy$p.value`). Within the surveyed population, 50.24% of conservative identifying individuals *would not* label themselves as an environmentalist, whereas **53.73%** of liberal identifying individuals *would* label themselves as environmentalist showing a clear correlation between the two.
