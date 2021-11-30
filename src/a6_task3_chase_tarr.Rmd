@@ -1,0 +1,89 @@
+---
+title: "Task 3 - Lizard Lengths"
+author: "Chase Tarr"
+date: "11/29/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(broom)
+library(janitor)
+library(here)
+library(kableExtra)
+library(DT)
+library(ggbeeswarm)
+library(plotly)
+library(effsize)
+```
+
+Reading in the data
+```{r}
+lizards <- read_csv(here("data", "lizards.csv")) %>% 
+  clean_names()
+```
+
+```{r}
+lizards_simple <- lizards %>% 
+  select(spp, sex, total_length) %>% 
+  filter(sex == "F",
+         spp %in% c("CNUN", "CNTE")) %>% 
+  drop_na(total_length)
+```
+
+Creating a finalized visualization comparing total lengths for female lizards for the two species
+```{r}
+lizards_graph <- ggplot(data = lizards_simple, aes(x = spp, y = total_length)) +
+  geom_beeswarm(aes(color = spp, ), size = 0.9) +
+  geom_boxplot(fill = NA, width = 0.3, outlier.color = NA) +
+  theme_grey() +
+  labs(x = "Lizard Species", y = "Length (mm)", 
+       title = "Female Lizard Species by Size (mm)",
+       color = "Species")+
+  scale_color_manual(values = c("deepskyblue2", "firebrick2")) +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.background = element_rect("lightgrey"))
+
+ggplotly(lizards_graph)
+```
+
+
+Creating a finalized summary table containing mean, standard deviation for total length, and sample size for each group (female CNUN and CNTE lizards)
+
+```{r}
+lizards_table <- lizards_simple %>% 
+  group_by(spp) %>% 
+  summarize(mean_length = round(mean(total_length, na.rm = TRUE), 2),
+            sd_length = round(sd(total_length, na.rm = TRUE), 2),
+            sample_size = n()) %>% 
+  rename(Species = spp)
+
+datatable(lizards_table)
+```
+
+```{r, include= FALSE}
+ggplot(data = lizards_simple, aes(sample = total_length , fill = spp))+
+  geom_qq() +
+  facet_wrap(~ spp, scales = 'free') +
+  theme_bw() +
+  labs(x = "Species")
+
+```
+
+Cohen's d Test
+```{r}
+cohens_test_cnun <- lizards_simple %>% 
+  filter(spp == "CNUN") %>% 
+  pull(total_length)
+
+cohens_test_cnte <- lizards_simple %>% 
+  filter(spp == "CNTE") %>% 
+  pull(total_length)
+
+cohens_test <- cohen.d(cohens_test_cnte, cohens_test_cnun)
+cohens_test
+```
+this large cohens d (effect size) illustrates a non-negligible difference in the two groups means that is more than 2.42 standard deviations away from eah other. illustrating a statistical significance in the difference in means.
+
+
