@@ -1,10 +1,10 @@
 ---
-title: "Task 2 - Survey Responses"
+title: "Survey Responses - Political & Environmental"
 author: "Chase Tarr"
 date: "11/29/2021"
 output: html_document
 ---
-
+This data summarizes the survey results from a surveyed population in which individuals self-reported their political preference (Conservative or Liberal), and if they identified themselves as an environmentalist by answering "Yes", "No", or "Unsure". We are seeking to determine if there is a significant association between an individuals political preference and whether or not they identify as an environmentalist. 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 
@@ -30,6 +30,7 @@ survey_data <- read_csv(here("data", "conservation_survey.csv")) %>%
   filter(Political_Party %in% c("Conservative", "Liberal"))
 ```
 
+
 ```{r}
 party_counts <- survey_data %>% 
   janitor::tabyl(Political_Party, areyou_enviro)
@@ -39,7 +40,8 @@ party_proportions <- party_counts %>%
   adorn_pct_formatting(digits = 2) %>% 
   adorn_ns()
 
-datatable(party_proportions)
+datatable(party_proportions,
+      caption = "Table 1: Political party preference correlating to the proportion of proclaimed Environmentalists")
 ```
 
 ```{r}
@@ -53,4 +55,7 @@ party_x2 <- chisq.test(party_cs)
 partyx2_tidy <- tidy(party_x2)
 ```
 
-We used Pearson's Chi-Squared Test to evaluate the relationship between political preference and whether or not a given person considers themselves as an environmentalist. Upon analyzing the data, it is evident that there is a significant association between political association (conservative or liberal leaning) and if a person considers themselves an environmentalist($\chi$\^2\^(`r partyx2_tidy$parameter`) = `r round(partyx2_tidy$statistic,2)`, *p* = `r partyx2_tidy$p.value`). Within the surveyed population, 50.24% of conservative identifying individuals *would not* label themselves as an environmentalist, whereas **53.73%** of liberal identifying individuals *would* label themselves as environmentalist showing a clear correlation between the two.
+We used Pearson's Chi-Squared Test to evaluate the relationship between political preference and whether or not a given person considers themselves as an environmentalist. Upon analyzing the data, it is evident that there is a significant association between political association (conservative or liberal leaning) and if a person considers themselves an environmentalist($\chi$\^2\^(`r partyx2_tidy$parameter`) = `r round(partyx2_tidy$statistic,2)`, *p* = `r partyx2_tidy$p.value`). Within the surveyed population, `r party_proportions$No [1]` of conservative identifying individuals *would not* label themselves as an environmentalist, whereas `r party_proportions$Yes [2]` of liberal identifying individuals *would* label themselves as environmentalist showing a clear correlation between the two.
+
+
+**Data Citation:** Andrews Forest LTER Site and C. Batavia. 2019. Influences on charitable giving for conservation: Online survey data of 1,331 respondents across the US, August 2017 ver 3. Environmental Data Initiative. https://doi.org/10.6073/pasta/926e6270e324a1322a900da14d38b96c
