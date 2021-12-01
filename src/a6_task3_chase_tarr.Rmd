@@ -1,9 +1,12 @@
 ---
-title: "Task 3 - Lizard Lengths"
+title: "Female Lizard Species and Lengths"
 author: "Chase Tarr"
 date: "11/29/2021"
 output: html_document
 ---
+
+This data describes the relationship between female lizard lengths of species Cnemidophorus uniparens (CNUN), also known as the Desert Grassland Lizard,  and Cnemidophorus tessalatus (CNTE), also known as the Colorado Checkered Lizard. These values were collected using a grid  of 16 pitfall traps located at each consumer plot to attract the species, and then analyzed using graphs, tables, Welch's Two Sample T-test, and Cohen's d Test to determine if there is any significant association between female lizard species and length. 
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
@@ -16,9 +19,10 @@ library(DT)
 library(ggbeeswarm)
 library(plotly)
 library(effsize)
+library(waffle)
 ```
 
-Reading in the data
+
 ```{r}
 lizards <- read_csv(here("data", "lizards.csv")) %>% 
   clean_names()
@@ -32,25 +36,29 @@ lizards_simple <- lizards %>%
   drop_na(total_length)
 ```
 
-Creating a finalized visualization comparing total lengths for female lizards for the two species
+
 ```{r}
-lizards_graph <- ggplot(data = lizards_simple, aes(x = spp, y = total_length)) +
-  geom_beeswarm(aes(color = spp, ), size = 0.9) +
+ggplot(data = lizards_simple, aes(x = spp, y = total_length)) +
+  geom_beeswarm(aes(color = spp), size = 0.9, cex = 1.5) +
   geom_boxplot(fill = NA, width = 0.3, outlier.color = NA) +
   theme_grey() +
   labs(x = "Lizard Species", y = "Length (mm)", 
-       title = "Female Lizard Species by Size (mm)",
-       color = "Species")+
-  scale_color_manual(values = c("deepskyblue2", "firebrick2")) +
+       title = "Figure 1: Female Lizard Species by Length (mm)",
+       color = "Species",
+       caption = "Source: Lightfoot, D. 2017. Lizard pitfall trap data (LTER-II, LTER-III) ver 36. Environmental Data Initiative.") +
+  scale_color_manual(labels = c("Cnemidophorus Tessalatus (CNTE)", "Cnemidophorus Uniparens (CNUN)"), values = c("mediumblue", "firebrick2")) +
   theme(plot.title = element_text(hjust = 0.5)) +
-  theme(legend.background = element_rect("lightgrey"))
+  theme(legend.background = element_rect("lightgrey"))+
+  theme(plot.caption = element_text(size = 7,
+                                    hjust = 0.001))
 
-ggplotly(lizards_graph)
+
 ```
 
+**Figure 1** illustrates the relationship between *Cnemidophorus Tessalatus* and *Cnemidophorus Uniparens*. A correlation is evident between the two species and the range of lengths each species has. The box around the data represents the median point with the top and bottom lines showing the minimum species length (140 mm-CNTE, 68mm-CNUN) as well as the maximum species length (321 mm-CNTE, 201 mm-CNUN).
 
-Creating a finalized summary table containing mean, standard deviation for total length, and sample size for each group (female CNUN and CNTE lizards)
 
+**Table 1:** Summary table illustrating mean total length, standard deviation of length from the mean, and the sample size of each female lizard species.
 ```{r}
 lizards_table <- lizards_simple %>% 
   group_by(spp) %>% 
@@ -63,16 +71,36 @@ datatable(lizards_table)
 ```
 
 ```{r, include= FALSE}
-ggplot(data = lizards_simple, aes(sample = total_length , fill = spp))+
+lizards_numeric <- lizards_simple$total_length <- as.numeric(as.character(lizards_simple$total_length))
+
+qq <- ggplot(data = lizards_simple, aes(sample = total_length , fill = spp))+
   geom_qq() +
   facet_wrap(~ spp, scales = 'free') +
   theme_bw() +
   labs(x = "Species")
 
+hist(lizards_numeric)
+qqnorm(lizards_numeric)
+
+cnte_lizards <- lizards_simple %>% 
+  filter(spp == "CNTE")
+
+cnun_lizards <- lizards_simple %>% 
+  filter(spp == "CNUN")
+
+cnte_numeric <- cnte_lizards$total_length <- as.numeric(as.character(cnte_lizards$total_length))
+
+cnun_numeric <- cnun_lizards$total_length <- as.numeric(as.character(cnun_lizards$total_length))
+
+hist(cnte_numeric)
+hist(cnun_numeric)
+qqnorm(cnte_numeric)
+qqnorm(cnun_numeric)
+
 ```
 
-Cohen's d Test
-```{r}
+#### Cohen's d Test
+```{r, include = FALSE}
 cohens_test_cnun <- lizards_simple %>% 
   filter(spp == "CNUN") %>% 
   pull(total_length)
@@ -83,7 +111,17 @@ cohens_test_cnte <- lizards_simple %>%
 
 cohens_test <- cohen.d(cohens_test_cnte, cohens_test_cnun)
 cohens_test
+
+t.test <- t.test(cohens_test_cnte, cohens_test_cnun)
+
+t.test
+
+tidy_t_test <- tidy(t.test)
+
 ```
-this large cohens d (effect size) illustrates a non-negligible difference in the two groups means that is more than 2.42 standard deviations away from eah other. illustrating a statistical significance in the difference in means.
+This large cohens d (effect size), `r round(cohens_test$estimate, 2)` illustrates a non-negligible difference in the two groups means that is more than 2.42 standard deviations away from each other. The upper and lower bounds of this confidence interval, [`r round(cohens_test$conf.int, 2)`] proves the spread of possible means, further illustrating a statistical significance in the difference in female lizard species and their mean of total length. The actual mean length of **Cnemidophorus Tessalatus** species is *`r tidy_t_test$estimate1`* whereas the actual mean length of species **Cnemidophorus Uniparens** is *`r tidy_t_test$estimate2`*. An smaller sample size for the Cnemidophorus Tessalatus female lizard species (`r lizards_table$sample_size [1]`) compared to the larger sample size for Cnemidophorus Uniparens (`r lizards_table$sample_size [2]`) may have played a role in this larger difference of means, however we can reference the hypothesis test in which we obtained a p value of `r tidy_t_test$p.value` suggesting that if we were to draw samples from populations with the same mean, there is an extremely small chance (< 1%) that we could have taken a random sample from the population that is at least as far out as our sample mean is from the population mean by random chance. We can confidently conclude that there is a significant association between female lizard species and total length.
+
+**Data Citation:** Lightfoot, D. 2017. Lizard pitfall trap data (LTER-II, LTER-III) ver 36. Environmental Data Initiative. https://doi.org/10.6073/pasta/ff37b4cace16a9943575f3fd7067064e 
+
 
 
