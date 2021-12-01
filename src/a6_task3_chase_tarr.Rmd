@@ -4,7 +4,7 @@ author: "Chase Tarr"
 date: "11/29/2021"
 output: html_document
 ---
-
+### Introduction
 This data describes the relationship between female lizard lengths of species Cnemidophorus uniparens (CNUN), also known as the Desert Grassland Lizard,  and Cnemidophorus tessalatus (CNTE), also known as the Colorado Checkered Lizard. These values were collected using a grid  of 16 pitfall traps located at each consumer plot to attract the species, and then analyzed using graphs, tables, Welch's Two Sample T-test, and Cohen's d Test to determine if there is any significant association between female lizard species and length. 
 
 
